@@ -1,2 +1,2 @@
 # rs2048
-2048 in Rust
+A CLI clone of 2048 written in Rust. Use W A S D to move and any other key to exit the program.
