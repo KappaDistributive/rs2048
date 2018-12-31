@@ -2,38 +2,17 @@ mod board;
 mod direction;
 mod game;
 
+#[macro_use]
+extern crate stdweb;
+
 use crate::board::Board;
 use crate::direction::Direction;
 use crate::game::Game;
-use pancurses::{curs_set, half_delay, initscr, noecho, Input};
 
-fn main() {
-    let mut game: Game = Game::new();
-    game.init();
-    let window = initscr();
-    window.printw(game.to_string());
-    window.refresh();
-    noecho();
-    curs_set(0);
-    let mut progress: bool = false;
-    loop {
-        progress = false;
-        match window.getch() {
-            Some(Input::Character('w')) => progress = game.step(&Direction::Up),
-            Some(Input::Character('s')) => progress = game.step(&Direction::Down),
-            Some(Input::Character('a')) => progress = game.step(&Direction::Left),
-            Some(Input::Character('d')) => progress = game.step(&Direction::Right),
-            None => {}
-            Some(_) => break,
-        }
-        if progress {
-            game.generate_new_cell();
-            half_delay(200);
-            window.clear();
-            window.printw(game.to_string());
-            window.refresh();
-        }
-    }
+fn main() {   
+    stdweb::initialize();
+    
+    stdweb::event_loop();
 }
 
 mod tests {

@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 rand = "0.6.1"
-pancurses = "0.16.1"
+stdweb = "0.4.12"
