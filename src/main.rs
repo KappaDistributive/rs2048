@@ -79,6 +79,61 @@ mod tests {
                           8,   0,   0,   0,
                           8,   0,   0,   0,
                           0,   0,   0,   0]);
+
+        // test 3
+        before.push(vec![  2,   2,   4,   2,
+                           2,   4,   0,   8,
+                           0,   2,   0,  16,
+                           0,   0,   0,   0]);
+        direction.push(&Direction::Left);
+        after.push(vec![  4,   4,   2,   0,
+                          2,   4,   8,   0,
+                          2,   16,   0,  0,
+                          0,   0,   0,   0]);
+        
+        // test 4
+        before.push(vec![  4,   2,   0,   0,
+                           0,   2,   0,   0,
+                           2,   4,   0,   0,
+                           2,   4,   2,   0]);
+        direction.push(&Direction::Up);
+        after.push(vec![  4,   4,   2,   0,
+                          4,   8,   0,   0,
+                          0,   0,   0,   0,
+                          0,   0,   0,   0]);
+
+        // test 5
+        before.push(vec![  0,   0,   2,   2,
+                           0,   0,   0,   0,
+                           0,   0,   8,   2,
+                           0,   4,   8,   4]);
+        direction.push(&Direction::Up);
+        after.push(vec![  0,   4,   2,   4,
+                          0,   0,  16,   4,
+                          0,   0,   0,   0,
+                          0,   0,   0,   0]);
+
+        // test 6
+        before.push(vec![  4,   8,   4,   4,
+                           2,   2,   0,   0,
+                           4,   2,   0,   0,
+                           2,   0,   0,   0]);
+        direction.push(&Direction::Right);
+        after.push(vec![  0,   4,   8,   8,
+                          0,   0,   0,   4,
+                          0,   0,   4,   2,
+                          0,   0,   0,   2]);
+
+        // test 7
+        before.push(vec![ 16,   4,   2,   2,
+                           2,   8,   4,   4,
+                           4,   0,   2,   0,
+                           0,   2,   0,   0]);
+        direction.push(&Direction::Right);
+        after.push(vec![  0,  16,   4,   4,
+                          0,   2,   8,   8,
+                          0,   0,   4,   2,
+                          0,   0,   0,   2]);
         
         for i in 0..before.len() {
             game.set_states(before[i].clone());
