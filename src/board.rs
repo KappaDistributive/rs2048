@@ -4,10 +4,11 @@ pub struct Board {
 }
 
 impl Board {
+    
     pub fn new() -> Self {
         Board::from_size(4)
     }
-
+    
     pub fn from_size(size: usize) -> Self {
         Board {
             size: size,
@@ -24,6 +25,14 @@ impl Board {
         }
     }
 
+    pub fn set_states(&mut self, states: Vec<usize> ) {
+        self.state = states;
+    }
+
+    pub fn get_states(&self) -> Vec<usize> {
+        self.state.clone()
+    }
+
     /// set self.state at (x,y) to value
     pub fn set_state(&mut self, x:usize, y:usize, value: usize) {
         if x < self.size && y < self.size {
@@ -37,6 +46,15 @@ impl Board {
     pub fn double_state(&mut self, x: usize, y:usize) {
         if x < self.size && y < self.size {
             self.state[y * self.size + x] *= 2;
+        } else {
+            panic!("({},{}) are out of bounds!", x, y);
+        }
+    }
+
+    /// Increase self.state at (x,y) by value
+    pub fn add_to_state(&mut self, x: usize, y:usize, value: usize) {
+        if x < self.size && y < self.size {
+            self.state[y * self.size + x] += value;
         } else {
             panic!("({},{}) are out of bounds!", x, y);
         }

@@ -1,6 +1,7 @@
 use crate::Board;
 use crate::Direction;
 use rand::{thread_rng, Rng};
+use std::collections::HashSet;
 
 pub struct Game {
     board: Board,
@@ -38,22 +39,54 @@ impl Game {
         self.board.to_string()
     }
 
-    pub fn step(&mut self, direction: &Direction) {
-        if self.merge(direction) || self.glide(direction) {
-            self.generate_new_cell();
-        }
+    pub fn set_state(&mut self, x: usize, y: usize, value: usize) {
+        self.board.set_state(x, y, value);
     }
 
-    // private helper functions
+    pub fn set_states(&mut self, states: Vec<usize>) {
+        self.board.set_states(states);
+    }
 
-    /// reset self.state, self.score and self.finished
-    fn clear(&mut self) {
+    pub fn get_states(&self) -> Vec<usize> {
+        self.board.get_states()
+    }
+
+    pub fn step(&mut self, direction: &Direction) -> bool {
+        let mut progress: bool = false;
+        let (x_transversal, y_transversal) = self.build_transveral(direction);
+        let mut merged: std::collections::HashSet<(usize, usize)> =
+            std::collections::HashSet::new();
+        for y in y_transversal {
+            for x in x_transversal.clone() {
+                let value_c = self.board.get_state(x, y);
+                let (x_t, y_t) = self.get_target(x, y, direction, &merged);
+                let value_t = self.board.get_state(x_t, y_t);
+
+                if value_c != 0 && (x != x_t || y != y_t) {
+                    progress = true;
+                    if value_c != value_t {
+                        self.board.set_state(x_t, y_t, value_c);
+                        self.board.set_state(x, y, 0);
+                    } else {
+                        merged.insert((x_t,y_t));
+                        self.board.double_state(x_t, y_t);
+                        self.board.set_state(x, y, 0);
+                    }
+                }
+            }
+        }
+        progress
+    }
+
+    /// Reset self.state, self.score and self.finished
+    pub fn clear(&mut self) {
         self.board = Board::from_size(self.size);
         self.score = 0;
         self.finished = false;
     }
-    /// fills a new random cell randomly with either 2 or 4
-    fn generate_new_cell(&mut self) {
+
+    /// Fill a new random cell randomly with either 2 or 4
+    pub fn generate_new_cell(&mut self) {
         let mut candidates: Vec<(usize, usize)> = Vec::new();
         for y in 0..self.size {
             for x in 0..self.size {
@@ -69,161 +102,61 @@ impl Game {
             let mut rng = thread_rng();
             let ran: usize = rng.gen_range(0, candidates_len);
             let (x, y) = candidates[ran];
-            match rng.gen() {
+            let rad: f32 = rng.gen();
+            match rad < 0.9 {
                 true => self.board.set_state(x, y, 2),
                 false => self.board.set_state(x, y, 4),
             }
         }
     }
 
-    fn merge(&mut self, direction: &Direction) -> bool {
-        let mut progress: bool = false;
-        match *direction {
-            Direction::Up => {
-                for x in 0..self.size {
-                    for y in 0..self.size {
-                        if self.board.get_state(x, y) != 0 {
-                            for z in y + 1..self.size {
-                                if self.board.get_state(x, y) == self.board.get_state(x, z) {
-                                    progress = true;
-                                    self.board.double_state(x, y);
-                                    self.board.set_state(x, z, 0);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            Direction::Down => {
-                for x in 0..self.size {
-                    for y in (0..self.size).rev() {
-                        if self.board.get_state(x, y) != 0 {
-                            for z in (0..y).rev() {
-                                if self.board.get_state(x, y) == self.board.get_state(x, z) {
-                                    progress = true;
-                                    self.board.double_state(x, y);
-                                    self.board.set_state(x, z, 0);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            Direction::Left => {
-                for y in 0..self.size {
-                    for x in 0..self.size {
-                        if self.board.get_state(x, y) != 0 {
-                            for z in x + 1..self.size {
-                                if self.board.get_state(x, y) == self.board.get_state(z, y) {
-                                    progress = true;
-                                    self.board.double_state(x, y);
-                                    self.board.set_state(z, y, 0);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            Direction::Right => {
-                for y in 0..self.size {
-                    for x in (0..self.size).rev() {
-                        if self.board.get_state(x, y) != 0 {
-                            for z in (0..x).rev() {
-                                if self.board.get_state(x, y) == self.board.get_state(z, y) {
-                                    progress = true;
-                                    self.board.double_state(x, y);
-                                    self.board.set_state(z, y, 0);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    // private helper functions    
+
+    /// Return position of cell to be merged with or moved to (x,y)
+    fn get_target(&self, x: usize, y: usize, direction: &Direction, merged: &HashSet<(usize,usize)>) -> (usize, usize) {
+        let mut a = x as i32;
+        let mut b = y as i32;
+        let vector = self.get_vector(direction);
+        while self.legal_position(a + vector.0, b + vector.1)
+            && (self.board.get_state((a + vector.0) as usize, (b + vector.1) as usize) == 0
+                ||
+                (self.board.get_state((a + vector.0) as usize, (b + vector.1) as usize) == self.board.get_state(x, y)
+                && !merged.contains(&((a + vector.0) as usize, (b + vector.1) as usize))))
+        {
+            a += vector.0;
+            b += vector.1;
         }
-        progress
+        (a as usize, b as usize)
     }
 
-    fn glide(&mut self, direction: &Direction) -> bool {
-        let mut progress: bool = false;
+    /// Check whether (x,y) is a position in self.board.state
+    fn legal_position(&self, x: i32, y: i32) -> bool {
+        0 <= x && x < self.size as i32 && 0 <= y && y < self.size as i32
+    }
 
-        match *direction {
-            Direction::Up => {
-                for x in 0..self.size {
-                    for y in 1..self.size {
-                        if self.board.get_state(x, y) != 0 {
-                            let mut z = y;
-                            let mut is_moved: bool = false;
-                            while z > 0 && self.board.get_state(x, z - 1) == 0 {
-                                z -= 1;
-                                is_moved = true;
-                            }
-                            if is_moved {
-                                progress = true;
-                                self.board.set_state(x, z, self.board.get_state(x, y));
-                                self.board.set_state(x, y, 0);
-                            }
-                        }
-                    }
-                }
-            }
-            Direction::Down => {
-                for x in 0..self.size {
-                    for y in (0..self.size - 1).rev() {
-                        if self.board.get_state(x, y) != 0 {
-                            let mut z = y;
-                            let mut is_moved: bool = false;
-                            while z + 1 < self.size && self.board.get_state(x, z + 1) == 0 {
-                                z += 1;
-                                is_moved = true;
-                            }
-                            if is_moved {
-                                progress = true;
-                                self.board.set_state(x, z, self.board.get_state(x, y));
-                                self.board.set_state(x, y, 0);
-                            }
-                        }
-                    }
-                }
-            }
-            Direction::Left => {
-                for y in 0..self.size {
-                    for x in 1..self.size {
-                        if self.board.get_state(x, y) != 0 {
-                            let mut z = x;
-                            let mut is_moved: bool = false;
-                            while z > 0 && self.board.get_state(z - 1, y) == 0 {
-                                z -= 1;
-                                is_moved = true;
-                            }
-                            if is_moved {
-                                progress = true;
-                                self.board.set_state(z, y, self.board.get_state(x, y));
-                                self.board.set_state(x, y, 0);
-                            }
-                        }
-                    }
-                }
-            }
-            Direction::Right => {
-                for y in 0..self.size {
-                    for x in (0..self.size).rev() {
-                        if self.board.get_state(x, y) != 0 {
-                            let mut z = x;
-                            let mut is_moved: bool = false;
-                            while z + 1 < self.size && self.board.get_state(z + 1, y) == 0 {
-                                z += 1;
-                                is_moved = true;
-                            }
-                            if is_moved {
-                                progress = true;
-                                self.board.set_state(z, y, self.board.get_state(x, y));
-                                self.board.set_state(x, y, 0);
-                            }
-                        }
-                    }
-                }
-            }
+    /// Build a list of positions to traverse in the right order
+    fn build_transveral(&self, direction: &Direction) -> (Vec<usize>, Vec<usize>) {
+        let mut x_transversal: Vec<usize> = Vec::new();
+        let mut y_transversal: Vec<usize> = Vec::new();
+        for i in 0..self.size {
+            x_transversal.push(i);
+            y_transversal.push(i);
         }
-        progress
+        match direction {
+            Direction::Right => x_transversal.reverse(),
+            Direction::Down => y_transversal.reverse(),
+            _ => {}
+        }
+        (x_transversal, y_transversal)
+    }
+
+    /// Get vector of direction to move in
+    fn get_vector(&self, direction: &Direction) -> (i32, i32) {
+        match direction {
+            Direction::Up => (0, -1),
+            Direction::Down => (0, 1),
+            Direction::Right => (1, 0),
+            Direction::Left => (-1, 0),
+        }
     }
 }
