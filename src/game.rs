@@ -1,5 +1,6 @@
 use crate::Board;
 use crate::Direction;
+use crate::Renderer;
 use rand::{thread_rng, Rng};
 use std::collections::HashSet;
 
@@ -31,6 +32,48 @@ impl Game {
         self.finished
     }
 
+    pub fn draw(&self, renderer: &Renderer) {
+        renderer.clear_all();
+
+        // draw grid
+        for x in 1..self.size {
+            renderer.draw_rect(
+                f64::from(x as u32) * f64::from(renderer.canvas.width())
+                    / f64::from(self.size as u32),
+                0.0,
+                1.0,
+                f64::from(renderer.canvas.height()),
+                &"black",
+            );
+        }
+        for y in 1..self.size {
+            renderer.draw_rect(
+                0.0,
+                f64::from(y as u32) * f64::from(renderer.canvas.height())
+                    / f64::from(self.size as u32),
+                f64::from(renderer.canvas.width()),
+                1.0,
+                &"black",
+            );
+        }
+
+        for y in 0..self.size {
+            for x in 0..self.size {
+                if self.board.get_state(x, y) != 0 {
+                    renderer.draw_rect(
+                        f64::from(x as u32) * f64::from(renderer.canvas.width())
+                            / f64::from(self.size as u32),
+                        f64::from(y as u32) * f64::from(renderer.canvas.height())
+                            / f64::from(self.size as u32),
+                        f64::from(renderer.canvas.width()) / f64::from(self.size as u32),
+                        f64::from(renderer.canvas.height()) / f64::from(self.size as u32),
+                        &"black",
+                    );
+                }
+            }
+        }
+    }
+
     pub fn print(&self) {
         self.board.print();
     }
@@ -51,6 +94,10 @@ impl Game {
         self.board.get_states()
     }
 
+    pub fn get_size(&self) -> usize {
+        self.size
+    }
+
     pub fn step(&mut self, direction: &Direction) -> bool {
         let mut progress: bool = false;
         let (x_transversal, y_transversal) = self.build_transveral(direction);
@@ -68,7 +115,7 @@ impl Game {
                         self.board.set_state(x_t, y_t, value_c);
                         self.board.set_state(x, y, 0);
                     } else {
-                        merged.insert((x_t,y_t));
+                        merged.insert((x_t, y_t));
                         self.board.double_state(x_t, y_t);
                         self.board.set_state(x, y, 0);
                     }
@@ -110,18 +157,29 @@ impl Game {
         }
     }
 
-    // private helper functions    
+    // private helper functions
 
     /// Return position of cell to be merged with or moved to (x,y)
-    fn get_target(&self, x: usize, y: usize, direction: &Direction, merged: &HashSet<(usize,usize)>) -> (usize, usize) {
+    fn get_target(
+        &self,
+        x: usize,
+        y: usize,
+        direction: &Direction,
+        merged: &HashSet<(usize, usize)>,
+    ) -> (usize, usize) {
         let mut a = x as i32;
         let mut b = y as i32;
         let vector = self.get_vector(direction);
         while self.legal_position(a + vector.0, b + vector.1)
-            && (self.board.get_state((a + vector.0) as usize, (b + vector.1) as usize) == 0
-                ||
-                (self.board.get_state((a + vector.0) as usize, (b + vector.1) as usize) == self.board.get_state(x, y)
-                && !merged.contains(&((a + vector.0) as usize, (b + vector.1) as usize))))
+            && (self
+                .board
+                .get_state((a + vector.0) as usize, (b + vector.1) as usize)
+                == 0
+                || (self
+                    .board
+                    .get_state((a + vector.0) as usize, (b + vector.1) as usize)
+                    == self.board.get_state(x, y)
+                    && !merged.contains(&((a + vector.0) as usize, (b + vector.1) as usize))))
         {
             a += vector.0;
             b += vector.1;

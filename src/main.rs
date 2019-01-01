@@ -1,17 +1,21 @@
 mod board;
 mod direction;
 mod game;
+mod renderer;
 
 #[macro_use]
 extern crate stdweb;
 
+use stdweb::traits::*;
+use stdweb::web::{IEventTarget, event::KeyDownEvent};
+
 use crate::board::Board;
 use crate::direction::Direction;
 use crate::game::Game;
+use crate::renderer::Renderer;
 
-fn main() {   
-    stdweb::initialize();
-    
+fn main() {
+    stdweb::initialize();    
     stdweb::event_loop();
 }
 
