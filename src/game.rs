@@ -1,11 +1,16 @@
-use crate::Board;
-use crate::Direction;
-use crate::Renderer;
-use rand::{thread_rng, Rng};
+#![allow(unused)]
+use crate::canvas::Canvas;
 use std::collections::HashSet;
 
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
 pub struct Game {
-    board: Board,
+    board: Vec<usize>,
     size: usize,
     score: usize,
     finished: bool,
@@ -18,80 +23,183 @@ impl Game {
 
     pub fn from_size(size: usize) -> Self {
         Game {
-            board: Board::from_size(size),
+            board: vec![0; size * size],
             size: size,
             score: 0,
             finished: false,
         }
     }
-    pub fn init(&mut self) {
-        self.generate_new_cell();
+
+    /// This is a temporary implementation to generate a new cell and
+    /// will be replaced once I've figured out how to generate random
+    /// numbers in WASM.
+    pub fn seed_cell(&mut self, seed: usize) {
+        let mut candidates: Vec<usize> = Vec::new();
+        for i in 0..self.board.len() {
+            if self.board[i] == 0 {
+                candidates.push(i);
+            }
+        }
+        match seed % 9 {
+            0 => {
+                self.board[candidates[seed % candidates.len()]] = 4;
+            }
+            _ => {
+                self.board[candidates[seed % candidates.len()]] = 2;
+            }
+        }
     }
 
     pub fn is_finished(self) -> bool {
         self.finished
     }
 
-    pub fn draw(&self, renderer: &Renderer) {
-        renderer.clear_all();
-
-        // draw grid
-        for x in 1..self.size {
-            renderer.draw_rect(
-                f64::from(x as u32) * f64::from(renderer.canvas.width())
-                    / f64::from(self.size as u32),
-                0.0,
-                1.0,
-                f64::from(renderer.canvas.height()),
-                &"black",
-            );
-        }
-        for y in 1..self.size {
-            renderer.draw_rect(
-                0.0,
-                f64::from(y as u32) * f64::from(renderer.canvas.height())
-                    / f64::from(self.size as u32),
-                f64::from(renderer.canvas.width()),
-                1.0,
-                &"black",
-            );
-        }
-
+    pub fn draw_board(&self, canvas: &Canvas) {
+        canvas.clear_all();
         for y in 0..self.size {
             for x in 0..self.size {
-                if self.board.get_state(x, y) != 0 {
-                    renderer.draw_rect(
-                        f64::from(x as u32) * f64::from(renderer.canvas.width())
-                            / f64::from(self.size as u32),
-                        f64::from(y as u32) * f64::from(renderer.canvas.height())
-                            / f64::from(self.size as u32),
-                        f64::from(renderer.canvas.width()) / f64::from(self.size as u32),
-                        f64::from(renderer.canvas.height()) / f64::from(self.size as u32),
-                        &"black",
+                if self.get_state(x, y) != 0 {
+                    canvas.draw_tile(
+                        x,
+                        y,
+                        self.get_size(),
+                        self.get_state(x, y),
+                        self.foreground_color(x, y),
+                        self.background_color(x, y),
                     );
                 }
             }
         }
     }
 
-    pub fn print(&self) {
-        self.board.print();
+    fn foreground_color(&self, x: usize, y: usize) -> &str {
+        match self.get_state(x, y) {
+            0 => &"#898077",
+            2 => &"#898077",
+            4 => &"#898077",
+            8 => &"#f9f6f2",
+            16 => &"#f9f6f2",
+            32 => &"#f9f6f2",
+            64 => &"#f9f6f2",
+            128 => &"#f9f6f2",
+            256 => &"#f9f6f2",
+            512 => &"#f9f6f2",
+            1024 => &"#f9f6f2",
+            2048 => &"#f9f6f2",
+            _ => &"#f9f6f2",
+        }
     }
 
+    fn background_color(&self, x: usize, y: usize) -> &str {
+        match self.get_state(x, y) {
+            0 => &"#f9f6f2",
+            2 => &"#eee4da",
+            4 => &"#ede0c8",
+            8 => &"#f2b179",
+            16 => &"f59563",
+            32 => &"#f67c5f",
+            64 => &"#f65e3b",
+            128 => &"edcf72",
+            256 => &"#edcc61",
+            512 => &"#edc850",
+            1024 => &"#edc53f",
+            2048 => &"#edc22e",
+            _ => &"#3c3a32",
+        }
+    }
+
+    /// Creates a String representation of self.state as in
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |   32768   |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |   2048    |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |    128    |           |    256    |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
     pub fn to_string(&self) -> String {
-        self.board.to_string()
+        let print_width: usize = 1 + self.size * 12;
+        let print_height: usize = 1 + self.size * 6;
+        let mut temp: Vec<char> = Vec::new();
+
+        // create empty board with cell borders
+        for y in 0..print_height {
+            for x in 0..print_width {
+                match (y % 6, x % 12) {
+                    (0, 0) => temp.push('+'),
+                    (0, _) => temp.push('-'),
+                    (_, 0) => temp.push('|'),
+                    _ => temp.push(' '),
+                }
+            }
+            temp.push('\n');
+        }
+
+        // fill in cells with proper offset
+        for y in 0..self.size {
+            for x in 0..self.size {
+                if self.get_state(x, y) > 0 {
+                    // get cell value
+                    let cell_state: Vec<char> = self
+                        .get_state(x, y)
+                        .to_string()
+                        .chars()
+                        .collect::<Vec<char>>();
+                    let cell_len = cell_state.len();
+
+                    for z in 0..cell_len {
+                        // calculate offset
+                        let offset = 6 - cell_len / 2;
+                        temp[(3 + y * 6) * (print_width + 1) + x * 12 + offset + z] = cell_state[z];
+                    }
+                }
+            }
+        }
+        temp.iter().collect()
     }
 
     pub fn set_state(&mut self, x: usize, y: usize, value: usize) {
-        self.board.set_state(x, y, value);
+        if x < self.size && y < self.size {
+            self.board[y * self.size + x] = value;
+        } else {
+            panic!("({},{}) is out ouf bounds!", x, y);
+        }
+    }
+
+    pub fn get_state(&self, x: usize, y: usize) -> usize {
+        if x < self.size && y < self.size {
+            return self.board[y * self.size + x];
+        }
+        panic!("({},{}) is out ouf bounds!", x, y);
+    }
+
+    pub fn double_state(&mut self, x: usize, y: usize) {
+        self.set_state(x, y, 2 * self.get_state(x, y));
     }
 
     pub fn set_states(&mut self, states: Vec<usize>) {
-        self.board.set_states(states);
+        self.board = states
     }
 
     pub fn get_states(&self) -> Vec<usize> {
-        self.board.get_states()
+        self.board.clone()
     }
 
     pub fn get_size(&self) -> usize {
@@ -105,19 +213,19 @@ impl Game {
             std::collections::HashSet::new();
         for y in y_transversal {
             for x in x_transversal.clone() {
-                let value_c = self.board.get_state(x, y);
+                let value_c = self.get_state(x, y);
                 let (x_t, y_t) = self.get_target(x, y, direction, &merged);
-                let value_t = self.board.get_state(x_t, y_t);
+                let value_t = self.get_state(x_t, y_t);
 
                 if value_c != 0 && (x != x_t || y != y_t) {
                     progress = true;
                     if value_c != value_t {
-                        self.board.set_state(x_t, y_t, value_c);
-                        self.board.set_state(x, y, 0);
+                        self.set_state(x_t, y_t, value_c);
+                        self.set_state(x, y, 0);
                     } else {
                         merged.insert((x_t, y_t));
-                        self.board.double_state(x_t, y_t);
-                        self.board.set_state(x, y, 0);
+                        self.double_state(x_t, y_t);
+                        self.set_state(x, y, 0);
                     }
                 }
             }
@@ -127,35 +235,35 @@ impl Game {
 
     /// Reset self.state, self.score and self.finished
     pub fn clear(&mut self) {
-        self.board = Board::from_size(self.size);
+        self.board = vec![0; self.board.len()];
         self.score = 0;
         self.finished = false;
     }
 
-    /// Fill a new random cell randomly with either 2 or 4
-    pub fn generate_new_cell(&mut self) {
-        let mut candidates: Vec<(usize, usize)> = Vec::new();
-        for y in 0..self.size {
-            for x in 0..self.size {
-                if self.board.get_state(x, y) == 0 {
-                    candidates.push((x, y));
-                }
-            }
-        }
-        let candidates_len = candidates.len();
-        if candidates_len == 0 {
-            panic!("Game has ended!");
-        } else {
-            let mut rng = thread_rng();
-            let ran: usize = rng.gen_range(0, candidates_len);
-            let (x, y) = candidates[ran];
-            let rad: f32 = rng.gen();
-            match rad < 0.9 {
-                true => self.board.set_state(x, y, 2),
-                false => self.board.set_state(x, y, 4),
-            }
-        }
-    }
+    //// Fill a new random cell randomly with either 2 or 4
+    // pub fn generate_new_cell(&mut self) {
+    //     let mut candidates: Vec<(usize, usize)> = Vec::new();
+    //     for y in 0..self.size {
+    //         for x in 0..self.size {
+    //             if self.get_state(x, y) == 0 {
+    //                 candidates.push((x, y));
+    //             }
+    //         }
+    //     }
+    //     let candidates_len = candidates.len();
+    //     if candidates_len == 0 {
+    //         panic!("Game has ended!");
+    //     } else {
+    //         let mut rng = thread_rng();
+    //         let ran: usize = rng.gen_range(0, candidates_len);
+    //         let (x, y) = candidates[ran];
+    //         let rad: f32 = rng.gen();
+    //         match rad < 0.9 {
+    //             true => self.set_state(x, y, 2),
+    //             false => self.set_state(x, y, 4),
+    //         }
+    //     }
+    // }
 
     // private helper functions
 
@@ -171,14 +279,9 @@ impl Game {
         let mut b = y as i32;
         let vector = self.get_vector(direction);
         while self.legal_position(a + vector.0, b + vector.1)
-            && (self
-                .board
-                .get_state((a + vector.0) as usize, (b + vector.1) as usize)
-                == 0
-                || (self
-                    .board
-                    .get_state((a + vector.0) as usize, (b + vector.1) as usize)
-                    == self.board.get_state(x, y)
+            && (self.get_state((a + vector.0) as usize, (b + vector.1) as usize) == 0
+                || (self.get_state((a + vector.0) as usize, (b + vector.1) as usize)
+                    == self.get_state(x, y)
                     && !merged.contains(&((a + vector.0) as usize, (b + vector.1) as usize))))
         {
             a += vector.0;

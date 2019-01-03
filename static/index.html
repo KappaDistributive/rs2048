@@ -1,16 +1,27 @@
 <!DOCTYPE html>
 
 <html lang="en">
+
   <head>
-    <meta charset="utf-8" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, height=device-height">
     <title>Rs 2048</title>
-    <meta name="description" content="A 2048 clone written in Rust">
-    <meta name="author" content="Stefan Mesken">
+    <style>
+      canvas {
+	  padding-left: 0;
+	  padding-right: 0;
+	  margin-left: auto;
+	  margin-right: auto;
+	  display: block;	  
+      }
+    </style>
   </head>
 
   <body>
-    <canvas id="canvas"> </canvas>
-
+    <h1 id="test"></h1>
+    <canvas id="canvas"></canvas>
+    <pre id="pre"></pre>
     <script src="rs2048.js"></script>
   </body>
+
 </html>

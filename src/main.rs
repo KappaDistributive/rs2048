@@ -1,128 +1,62 @@
-mod board;
-mod direction;
-mod game;
-mod renderer;
-
-#[macro_use]
 extern crate stdweb;
 
-use stdweb::traits::*;
-use stdweb::web::{IEventTarget, event::KeyDownEvent};
-
-use crate::board::Board;
-use crate::direction::Direction;
+mod canvas;
+mod game;
+mod ran;
+use crate::canvas::Canvas;
+use crate::game::Direction;
 use crate::game::Game;
-use crate::renderer::Renderer;
+
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use stdweb::traits::*;
+use stdweb::web::{document, event::KeyDownEvent, IEventTarget};
 
 fn main() {
-    stdweb::initialize();    
-    stdweb::event_loop();
-}
+    stdweb::initialize();
+    let mut index: usize = 1;
+    let game = Rc::new(RefCell::new(Game::new()));
+    game.borrow_mut().seed_cell(ran::RAN[0]);
+    //let pre = document().query_selector(&"#pre").unwrap().unwrap();
+    let canvas = Canvas::new("#canvas");
 
-mod tests {
-    use super::*;
+    game.borrow().draw_board(&canvas);
 
-    #[test]
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn test_game_step() {
-        let mut game: Game = Game::new();
-        let mut before: Vec<Vec<usize>> = Vec::new();
-        let mut direction: Vec<&Direction> = Vec::new();
-        let mut after: Vec<Vec<usize>> = Vec::new();
-
-        // test 0
-        before.push(vec![  2,   0,   0,   0,
-                           2,   4,   0,   0,
-                           8,   0,   0,   2,
-                           8,  16,   4,   0]);
-        direction.push(&Direction::Down);
-        after.push(vec![   0,   0,   0,   0,
-                           0,   0,   0,   0,
-                           4,   4,   0,   0,
-                           16,  16,   4,   2]);
-
-        // test 1
-        before.push(vec![  0,   0,   0,   0,
-                           0,   2,   0,   4,
-                           0,   0,   0,   4,
-                           0,   0,   2,   4]);
-        direction.push(&Direction::Down);
-        after.push(vec![  0,   0,   0,   0,
-                          0,   0,   0,   0,
-                          0,   0,   0,   4,
-                          0,   2,   2,   8]);
-
-        // test 2
-        before.push(vec![  2,   2,   0,   2,
-                           8,   0,   0,   0,
-                           4,   0,   4,   0,
-                           0,   0,   0,   0]);
-        direction.push(&Direction::Left);
-        after.push(vec![  4,   2,   0,   0,
-                          8,   0,   0,   0,
-                          8,   0,   0,   0,
-                          0,   0,   0,   0]);
-
-        // test 3
-        before.push(vec![  2,   2,   4,   2,
-                           2,   4,   0,   8,
-                           0,   2,   0,  16,
-                           0,   0,   0,   0]);
-        direction.push(&Direction::Left);
-        after.push(vec![  4,   4,   2,   0,
-                          2,   4,   8,   0,
-                          2,   16,   0,  0,
-                          0,   0,   0,   0]);
-        
-        // test 4
-        before.push(vec![  4,   2,   0,   0,
-                           0,   2,   0,   0,
-                           2,   4,   0,   0,
-                           2,   4,   2,   0]);
-        direction.push(&Direction::Up);
-        after.push(vec![  4,   4,   2,   0,
-                          4,   8,   0,   0,
-                          0,   0,   0,   0,
-                          0,   0,   0,   0]);
-
-        // test 5
-        before.push(vec![  0,   0,   2,   2,
-                           0,   0,   0,   0,
-                           0,   0,   8,   2,
-                           0,   4,   8,   4]);
-        direction.push(&Direction::Up);
-        after.push(vec![  0,   4,   2,   4,
-                          0,   0,  16,   4,
-                          0,   0,   0,   0,
-                          0,   0,   0,   0]);
-
-        // test 6
-        before.push(vec![  4,   8,   4,   4,
-                           2,   2,   0,   0,
-                           4,   2,   0,   0,
-                           2,   0,   0,   0]);
-        direction.push(&Direction::Right);
-        after.push(vec![  0,   4,   8,   8,
-                          0,   0,   0,   4,
-                          0,   0,   4,   2,
-                          0,   0,   0,   2]);
-
-        // test 7
-        before.push(vec![ 16,   4,   2,   2,
-                           2,   8,   4,   4,
-                           4,   0,   2,   0,
-                           0,   2,   0,   0]);
-        direction.push(&Direction::Right);
-        after.push(vec![  0,  16,   4,   4,
-                          0,   2,   8,   8,
-                          0,   0,   4,   2,
-                          0,   0,   0,   2]);
-        
-        for i in 0..before.len() {
-            game.set_states(before[i].clone());
-            game.step(direction[i]);
-            assert_eq!(game.get_states(), after[i]);
+    document().add_event_listener({
+        //game.clone();
+        move |event: KeyDownEvent| {
+            #[allow(unused_mut)]
+            let mut progress: bool;
+            match event.key().as_ref() {
+                "ArrowUp" => {
+                    progress = game.borrow_mut().step(&Direction::Up);
+                }
+                "ArrowDown" => {
+                    progress = game.borrow_mut().step(&Direction::Down);
+                }
+                "ArrowLeft" => {
+                    progress = game.borrow_mut().step(&Direction::Left);
+                }
+                "ArrowRight" => {
+                    progress = game.borrow_mut().step(&Direction::Right);
+                }
+                "r" => {
+                    game.borrow_mut().clear();
+                    progress = true;
+                }
+                _ => {
+                    progress = false;
+                }
+            };
+            if progress {
+                game.borrow_mut().seed_cell(ran::RAN[index % 10000]);
+                index += 1;
+                game.borrow().draw_board(&canvas);
+                //pre.set_text_content(&game.borrow().to_string());
+            }
         }
-        
-    }
+    });
+
+    stdweb::event_loop();
 }
