@@ -58,7 +58,7 @@ impl Canvas {
             &value.to_string(),
             scaled_x + 0.5 * scaled_width,
             scaled_y + 0.5 * scaled_height + OFFSET_Y,
-            None,
+            Some(scaled_width - 3.0 * BORDER_X),
         );
     }
 
