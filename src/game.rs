@@ -1,7 +1,10 @@
 #![allow(unused)]
 use std::collections::HashSet;
+use stdweb::traits::*;
+use stdweb::web::{document, Element, INode};
 
 use crate::canvas::Canvas;
+use crate::scoreboard::Scoreboard;
 
 pub enum Direction {
     Up,
@@ -71,6 +74,12 @@ impl Game {
                 }
             }
         }
+    }
+
+    pub fn draw_score(&self, scoreboard: &Scoreboard) {
+        scoreboard
+            .scoreboard
+            .set_text_content(&format!("{}", self.score));
     }
 
     fn foreground_color(&self, x: usize, y: usize) -> &str {
@@ -227,6 +236,7 @@ impl Game {
                         merged.insert((x_t, y_t));
                         self.double_state(x_t, y_t);
                         self.set_state(x, y, 0);
+                        self.score += self.get_state(x_t, y_t);
                     }
                 }
             }

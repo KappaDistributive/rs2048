@@ -7,19 +7,54 @@
     <meta name="viewport" content="width=device-width, height=device-height">
     <title>Rs 2048</title>
     <style>
-      canvas {
-	  padding-left: 0;
-	  padding-right: 0;
-	  margin-left: auto;
-	  margin-right: auto;
-	  display: block;	  
+      body {
+	  background-color: #f9f6f2;
       }
+      canvas {
+
+      }
+     
+      .game__container {
+	  display: grid;
+	  grid-template-columns: 1fr 600px 1fr;
+	  grid-template-rows: 599px;
+	  grid-gap: 1rem;	  
+      }
+
+      .game-board {
+	  padding: 0px;
+	  box-shadow: 0px 0px 10px 2px grey;
+      }
+
+      .scoreboard-label {
+	  color: #898077;
+	  font-family: Verdana, Arial;
+	  font-size: 30px;
+	  
+      }
+
+      .scoreboard-counter {
+	  color: #898077;
+	  font-family: Verdana, Arial;
+	  font-size: 30px;
+	  
+      }
+
     </style>
   </head>
 
   <body>
     <h1 id="test"></h1>
-    <canvas id="canvas"></canvas>
+    <div class="game__container">
+      <div class="left__sidebar"></div>
+      <div class="game-board">
+	<canvas id="canvas"></canvas>
+      </div>
+      <div class="scoreboard__container">
+	<div class="scoreboard-label">Score</div>
+	<div id="scoreboard" class="scoreboard-counter">0</div>	  
+      </div>
+    </div>
     <script src="rs2048.js"></script>
   </body>
 
