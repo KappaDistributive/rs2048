@@ -1,4 +1,4 @@
-#[macro_use]
+//#[macro_use]
 extern crate stdweb;
 
 mod canvas;
@@ -113,7 +113,6 @@ fn main() {
         move |event: KeyDownEvent| {
             #[allow(unused_mut)]
             let mut progress: bool;
-            console!(log, "key down!");
             match event.key().as_ref() {
                 "ArrowUp" => {
                     progress = game.borrow_mut().step(&Direction::Up);
