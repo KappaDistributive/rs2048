@@ -1,6 +1,7 @@
 #![allow(unused)]
-use crate::canvas::Canvas;
 use std::collections::HashSet;
+
+use crate::canvas::Canvas;
 
 pub enum Direction {
     Up,
@@ -239,31 +240,6 @@ impl Game {
         self.score = 0;
         self.finished = false;
     }
-
-    //// Fill a new random cell randomly with either 2 or 4
-    // pub fn generate_new_cell(&mut self) {
-    //     let mut candidates: Vec<(usize, usize)> = Vec::new();
-    //     for y in 0..self.size {
-    //         for x in 0..self.size {
-    //             if self.get_state(x, y) == 0 {
-    //                 candidates.push((x, y));
-    //             }
-    //         }
-    //     }
-    //     let candidates_len = candidates.len();
-    //     if candidates_len == 0 {
-    //         panic!("Game has ended!");
-    //     } else {
-    //         let mut rng = thread_rng();
-    //         let ran: usize = rng.gen_range(0, candidates_len);
-    //         let (x, y) = candidates[ran];
-    //         let rad: f32 = rng.gen();
-    //         match rad < 0.9 {
-    //             true => self.set_state(x, y, 2),
-    //             false => self.set_state(x, y, 4),
-    //         }
-    //     }
-    // }
 
     // private helper functions
 
