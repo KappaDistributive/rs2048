@@ -7,13 +7,14 @@ use std::sync::{Arc, Mutex};
 
 mod canvas;
 mod game;
+mod scoreboard;
 mod util;
 
 use crate::canvas::Canvas;
 use crate::game::Direction;
 use crate::game::Game;
+use crate::scoreboard::Scoreboard;
 use crate::util::*;
-
 
 fn main() {
     // Initialize framework
@@ -23,11 +24,13 @@ fn main() {
     let mut index: usize = 1;
     let mut game = Game::new();
     let canvas = Canvas::new("#canvas");
+    let scoreboard = Scoreboard::new("#scoreboard");
     let mut last_mouse_pos = Point::from_data(0, 0);
 
     // Initialize game
     game.seed_cell(get_seed());
     game.draw_board(&canvas);
+    game.draw_score(&scoreboard);
 
     // Process a single GameEvent
     let process_event_fn = move |game_event| {
@@ -56,6 +59,7 @@ fn main() {
         if progress {
             game.seed_cell(get_seed());
             index += 1;
+            game.draw_score(&scoreboard);
             game.draw_board(&canvas);
         }
     };
