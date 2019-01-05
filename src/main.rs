@@ -1,5 +1,9 @@
 #[macro_use]
 extern crate stdweb;
+use stdweb::traits::*;
+use stdweb::web::{document, event};
+
+use std::sync::{Arc, Mutex};
 
 mod canvas;
 mod game;
@@ -8,19 +12,8 @@ mod util;
 use crate::canvas::Canvas;
 use crate::game::Direction;
 use crate::game::Game;
-
 use crate::util::*;
 
-use stdweb::traits::*;
-use stdweb::web::{document, event};
-
-use std::sync::{Arc, Mutex};
-
-enum GameEvent {
-    KeyDown(event::KeyDownEvent),
-    MouseDown(event::MouseDownEvent),
-    MouseUp(event::MouseUpEvent),
-}
 
 fn main() {
     // Initialize framework

@@ -1,7 +1,14 @@
 use stdweb;
+use stdweb::web::event;
 use stdweb::unstable::TryInto;
 
 use crate::game::Direction;
+
+pub enum GameEvent {
+    KeyDown(event::KeyDownEvent),
+    MouseDown(event::MouseDownEvent),
+    MouseUp(event::MouseUpEvent),
+}
 
 pub struct Point {
     x: i32,
