@@ -1,11 +1,15 @@
+#[macro_use]
 extern crate stdweb;
 
 mod canvas;
 mod game;
-mod ran;
+mod util;
+
 use crate::canvas::Canvas;
 use crate::game::Direction;
 use crate::game::Game;
+
+use crate::util::*;
 
 use stdweb::traits::*;
 use stdweb::web::{document, event};
@@ -16,40 +20,6 @@ enum GameEvent {
     KeyDown(event::KeyDownEvent),
     MouseDown(event::MouseDownEvent),
     MouseUp(event::MouseUpEvent),
-}
-
-struct Point {
-    x: i32,
-    y: i32,
-}
-
-impl Point {
-    fn from_data(x: i32, y: i32) -> Self {
-        Point { x, y }
-    }
-
-    fn set(&mut self, x: i32, y: i32) {
-        self.x = x;
-        self.y = y;
-    }
-}
-
-fn get_direction(last: &Point, current: &Point) -> Direction {
-    if (last.x - current.x).abs() > (last.y - current.y).abs() {
-        // move horizontal
-        return if last.x > current.x {
-            Direction::Left
-        } else {
-            Direction::Right
-        };
-    } else {
-        // move vertical
-        return if last.y > current.y {
-            Direction::Up
-        } else {
-            Direction::Down
-        };
-    }
 }
 
 fn main() {
@@ -63,7 +33,7 @@ fn main() {
     let mut last_mouse_pos = Point::from_data(0, 0);
 
     // Initialize game
-    game.seed_cell(ran::RAN[0]);
+    game.seed_cell(get_seed());
     game.draw_board(&canvas);
 
     // Process a single GameEvent
@@ -72,31 +42,26 @@ fn main() {
             GameEvent::MouseDown(event) => {
                 last_mouse_pos.set(event.client_x(), event.client_y());
                 false
-            },
+            }
             GameEvent::MouseUp(event) => {
-                let current_mouse_pos =
-                    Point::from_data(event.client_x(), event.client_y());
-                let direction =
-                    get_direction(&last_mouse_pos, &current_mouse_pos);
+                let current_mouse_pos = Point::from_data(event.client_x(), event.client_y());
+                let direction = get_direction(&last_mouse_pos, &current_mouse_pos);
                 game.step(&direction)
-
-            },
-            GameEvent::KeyDown(event) => {
-                match event.key().as_ref() {
-                    "ArrowUp" =>  game.step(&Direction::Up),
-                    "ArrowDown" => game.step(&Direction::Down),
-                    "ArrowLeft" => game.step(&Direction::Left),
-                    "ArrowRight" => game.step(&Direction::Right),
-                    "r" => {
-                        game.clear();
-                        true
-                    },
-                    _ => false,
+            }
+            GameEvent::KeyDown(event) => match event.key().as_ref() {
+                "ArrowUp" => game.step(&Direction::Up),
+                "ArrowDown" => game.step(&Direction::Down),
+                "ArrowLeft" => game.step(&Direction::Left),
+                "ArrowRight" => game.step(&Direction::Right),
+                "r" => {
+                    game.clear();
+                    true
                 }
+                _ => false,
             },
         };
         if progress {
-            game.seed_cell(ran::RAN[index % 10000]);
+            game.seed_cell(get_seed());
             index += 1;
             game.draw_board(&canvas);
         }
@@ -105,8 +70,7 @@ fn main() {
     // The event processing closure needs to be mutably
     // shared between event handlers. Interior mutability
     // will work.
-    let process_event =
-        Arc::new(Mutex::new(Box::new(process_event_fn)));
+    let process_event = Arc::new(Mutex::new(Box::new(process_event_fn)));
 
     // Add event handler MouseDown
     document()
@@ -116,8 +80,7 @@ fn main() {
             let process_event = process_event.clone();
             move |event: event::MouseDownEvent| {
                 event.prevent_default();
-                let ref mut process_event =
-                    *process_event.lock().unwrap();
+                let ref mut process_event = *process_event.lock().unwrap();
                 process_event(GameEvent::MouseDown(event));
             }
         });
@@ -129,24 +92,21 @@ fn main() {
         .add_event_listener({
             let process_event = process_event.clone();
             move |event: event::MouseUpEvent| {
-                let ref mut process_event =
-                    *process_event.lock().unwrap();
+                let ref mut process_event = *process_event.lock().unwrap();
                 event.prevent_default();
                 process_event(GameEvent::MouseUp(event));
             }
         });
 
     // Add event handler KeyDown
-    document()
-        .add_event_listener({
-            let process_event = process_event.clone();
-            move |event: event::KeyDownEvent| {
-                let ref mut process_event =
-                    *process_event.lock().unwrap();
-                process_event(GameEvent::KeyDown(event));
-            }
-        });
-    
+    document().add_event_listener({
+        let process_event = process_event.clone();
+        move |event: event::KeyDownEvent| {
+            let ref mut process_event = *process_event.lock().unwrap();
+            process_event(GameEvent::KeyDown(event));
+        }
+    });
+
     // Start the event loop (which will never return)
     stdweb::event_loop();
 }
