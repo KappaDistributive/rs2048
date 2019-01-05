@@ -13,7 +13,7 @@ use std::rc::Rc;
 
 use stdweb::traits::*;
 use stdweb::web::{
-    document, event::KeyDownEvent, event:: PointerDownEvent, event::PointerUpEvent, IEventTarget,
+    document, event::KeyDownEvent, event::MouseDownEvent, event::MouseUpEvent, IEventTarget,
 };
 
 struct Point {
@@ -26,7 +26,7 @@ impl Point {
         Point { x, y }
     }
 
-    fn set(&mut self, x: i32, y:i32) {
+    fn set(&mut self, x: i32, y: i32) {
         self.x = x;
         self.y = y;
     }
@@ -43,10 +43,18 @@ impl Point {
 fn get_direction(last: Point, current: Point) -> Direction {
     if (last.x - current.x).abs() > (last.y - current.y).abs() {
         // move horizontal
-        return if last.x > current.x {Direction::Left} else {Direction::Right};
+        return if last.x > current.x {
+            Direction::Left
+        } else {
+            Direction::Right
+        };
     } else {
         // move vertical
-        return if last.y > current.y {Direction::Up} else {Direction::Down};
+        return if last.y > current.y {
+            Direction::Up
+        } else {
+            Direction::Down
+        };
     }
 }
 
@@ -54,36 +62,42 @@ fn main() {
     stdweb::initialize();
     let mut index: usize = 1;
     let last_mouse_pos = Rc::new(RefCell::new(Point::from_data(0, 0)));
-    let game = Rc::new(RefCell::new(Game::new()));        
+    let game = Rc::new(RefCell::new(Game::new()));
     let canvas = Canvas::new("#canvas");
-
 
     // Initialize game
     game.borrow_mut().seed_cell(ran::RAN[0]);
     game.borrow().draw_board(&canvas);
 
-    // Add event handler PointerDown 
+    // Add event handler MouseDown
     document()
         .get_element_by_id("canvas")
         .unwrap()
         .add_event_listener({
             let last_mouse_pos = last_mouse_pos.clone();
-            move |event: PointerDownEvent| {                
-                last_mouse_pos.borrow_mut().set(event.client_x(), event.client_y( ));
+            move |event: MouseDownEvent| {
+                event.prevent_default();
+                last_mouse_pos
+                    .borrow_mut()
+                    .set(event.client_x(), event.client_y());
             }
         });
 
-    // Add event handler PointerUp 
+    // Add event handler MouseUp
     document()
         .get_element_by_id("canvas")
         .unwrap()
         .add_event_listener({
             let game = game.clone();
             let last_mouse_pos = last_mouse_pos.clone();
-            move |event: PointerUpEvent| {
+            move |event: MouseUpEvent| {
+                event.prevent_default();
                 let mut progress: bool = false;
-                let current_mouse_pos = Point::from_data(event.client_x( ), event.client_y( ));
-                let last_mouse_pos = Point::from_data(last_mouse_pos.borrow().get_x(),last_mouse_pos.borrow().get_y());
+                let current_mouse_pos = Point::from_data(event.client_x(), event.client_y());
+                let last_mouse_pos = Point::from_data(
+                    last_mouse_pos.borrow().get_x(),
+                    last_mouse_pos.borrow().get_y(),
+                );
                 let direction = get_direction(last_mouse_pos, current_mouse_pos);
                 progress = game.borrow_mut().step(&direction);
                 if progress {
