@@ -16,6 +16,10 @@ use crate::game::Game;
 use crate::scoreboard::Scoreboard;
 use crate::util::*;
 
+// Set this to some positive number of milliseconds
+// to get a game tick at that interval.
+const TICK_MS: u32 = 0;
+
 fn main() {
     // Initialize framework
     stdweb::initialize();
@@ -79,6 +83,14 @@ fn main() {
                 }
                 _ => false,
             },
+            GameEvent::Tick => {
+                // XXX Enable TICK_MS above and
+                // uncomment below to try out the
+                // interval timer.
+                
+                // canvas.clear_all();
+                false
+            },
         };
         if progress {
             game.seed_cell(get_seed());
@@ -91,7 +103,8 @@ fn main() {
     // The event processing closure needs to be mutably
     // shared between event handlers. Interior mutability
     // will work.
-    let process_event = Arc::new(Mutex::new(Box::new(process_event_fn)));
+    let process_event: Arc<Mutex<Box<FnMut(GameEvent)>>> =
+        Arc::new(Mutex::new(Box::new(process_event_fn)));
 
     // Add event handler MouseDown
     document()
@@ -127,6 +140,25 @@ fn main() {
             process_event(GameEvent::KeyDown(event));
         }
     });
+
+
+    // Set up and start a timer if needed.
+    if TICK_MS > 0 {
+        fn run_timer(process_event: Arc<Mutex<Box<FnMut(GameEvent)>>>)
+        {
+            stdweb::web::set_timeout({
+                let process_event_clone = process_event.clone();
+                move || {
+                    let ref mut process_event_fn =
+                        *process_event_clone.lock().unwrap();
+                    process_event_fn(GameEvent::Tick);
+                    run_timer(process_event);
+                }},
+                TICK_MS,
+            );
+        }
+        run_timer(process_event);
+    }
 
     // Start the event loop (which will never return)
     stdweb::event_loop();

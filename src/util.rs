@@ -8,6 +8,7 @@ pub enum GameEvent {
     KeyDown(event::KeyDownEvent),
     MouseDown(event::MouseDownEvent),
     MouseUp(event::MouseUpEvent),
+    Tick,
 }
 
 pub struct Point {
