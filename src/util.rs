@@ -1,6 +1,6 @@
 use stdweb;
-use stdweb::web::event;
 use stdweb::unstable::TryInto;
+use stdweb::web::event;
 
 use crate::game::Direction;
 

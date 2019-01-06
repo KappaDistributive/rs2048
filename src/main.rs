@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate stdweb;
 use stdweb::traits::*;
-use stdweb::web::{document, event};
+use stdweb::web::{document, event, window};
 
 use std::sync::{Arc, Mutex};
 
@@ -24,13 +24,27 @@ fn main() {
     let mut index: usize = 1;
     let mut game = Game::new();
     let canvas = Canvas::new("#canvas");
-    let scoreboard = Scoreboard::new("#scoreboard");
+    let scoreboard = Scoreboard::new("#scoreboard", "#best");
     let mut last_mouse_pos = Point::from_data(0, 0);
 
     // Initialize game
+
+    // Attempt to recover previous best from web storage
+    match window().local_storage().get(&"best") {
+        Some(s) => match s.parse::<usize>() {
+            Ok(best) => {
+                game.set_best(best);
+            }
+            Err(_) => {}
+        },
+        None => {}
+    }
+
     game.seed_cell(get_seed());
     game.draw_board(&canvas);
     game.draw_score(&scoreboard);
+
+    // End initialization of game
 
     // Process a single GameEvent
     let process_event_fn = move |game_event| {
@@ -51,6 +65,16 @@ fn main() {
                 "ArrowRight" => game.step(&Direction::Right),
                 "r" => {
                     game.clear();
+                    // Store new best in web storage
+                    match window()
+                        .local_storage()
+                        .insert(&"best", &format!("{}", game.get_best()))
+                    {
+                        Ok(_) => {}
+                        Err(_) => {
+                            console!(log, "Failed to save high score to web storage!");
+                        }
+                    }
                     true
                 }
                 _ => false,

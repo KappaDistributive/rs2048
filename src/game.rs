@@ -17,6 +17,7 @@ pub struct Game {
     board: Vec<usize>,
     size: usize,
     score: usize,
+    best: usize,
     finished: bool,
 }
 
@@ -30,6 +31,7 @@ impl Game {
             board: vec![0; size * size],
             size: size,
             score: 0,
+            best: 0,
             finished: false,
         }
     }
@@ -80,6 +82,7 @@ impl Game {
         scoreboard
             .scoreboard
             .set_text_content(&format!("{}", self.score));
+        scoreboard.best.set_text_content(&format!("{}", self.best));
     }
 
     fn foreground_color(&self, x: usize, y: usize) -> &str {
@@ -205,11 +208,23 @@ impl Game {
     }
 
     pub fn set_states(&mut self, states: Vec<usize>) {
-        self.board = states
+        self.board = states;
+    }
+
+    pub fn set_best(&mut self, best: usize) {
+        self.best = best;
     }
 
     pub fn get_states(&self) -> Vec<usize> {
         self.board.clone()
+    }
+
+    pub fn get_score(&self) -> usize {
+        self.score
+    }
+
+    pub fn get_best(&self) -> usize {
+        self.best
     }
 
     pub fn get_size(&self) -> usize {
@@ -247,6 +262,7 @@ impl Game {
     /// Reset self.state, self.score and self.finished
     pub fn clear(&mut self) {
         self.board = vec![0; self.board.len()];
+        self.best = std::cmp::max(self.best, self.score);
         self.score = 0;
         self.finished = false;
     }
