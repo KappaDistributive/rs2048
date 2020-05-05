@@ -316,8 +316,7 @@ impl std::fmt::Display for Game {
                     for (z, &st) in cell_state.iter().enumerate() {
                         // calculate offset
                         let offset = 6 - cell_len / 2;
-                        let dest = (3 + y * 6) * (print_width + 1)
-                            + x * 12 + offset + z;
+                        let dest = (3 + y * 6) * (print_width + 1) + x * 12 + offset + z;
                         temp[dest] = st;
                     }
                 }

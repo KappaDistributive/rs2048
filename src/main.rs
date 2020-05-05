@@ -84,10 +84,10 @@ fn main() {
                 // XXX Enable TICK_MS above and
                 // uncomment below to try out the
                 // interval timer.
-                
+
                 // canvas.clear_all();
                 false
-            },
+            }
         };
         if progress {
             game.seed_cell(get_seed());
@@ -100,8 +100,7 @@ fn main() {
     // The event processing closure needs to be mutably
     // shared between event handlers. Interior mutability
     // will work.
-    let process_event: Arc<Mutex<dyn FnMut(GameEvent)>> =
-        Arc::new(Mutex::new(process_event_fn));
+    let process_event: Arc<Mutex<dyn FnMut(GameEvent)>> = Arc::new(Mutex::new(process_event_fn));
 
     // Add event handler MouseDown
     document()
@@ -138,16 +137,13 @@ fn main() {
         }
     });
 
-
     // Set up and start a timer if needed.
     if TICK_MS.is_some() {
-        fn run_timer(process_event: Arc<Mutex<dyn FnMut(GameEvent)>>)
-        {
+        fn run_timer(process_event: Arc<Mutex<dyn FnMut(GameEvent)>>) {
             let process_event_clone = process_event.clone();
             stdweb::web::set_timeout(
                 move || {
-                    let process_event_fn =
-                        &mut *process_event_clone.lock().unwrap();
+                    let process_event_fn = &mut *process_event_clone.lock().unwrap();
                     process_event_fn(GameEvent::Tick);
                     run_timer(process_event);
                 },
