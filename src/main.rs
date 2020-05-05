@@ -18,7 +18,7 @@ use crate::util::*;
 
 // Set this to some positive number of milliseconds
 // to get a game tick at that interval.
-const TICK_MS: u32 = 0;
+const TICK_MS: Option<u32> = None;
 
 fn main() {
     // Initialize framework
@@ -34,14 +34,11 @@ fn main() {
     // Initialize game
 
     // Attempt to recover previous best from web storage
-    match window().local_storage().get(&"best") {
-        Some(s) => match s.parse::<usize>() {
-            Ok(best) => {
-                game.set_best(best);
-            }
-            Err(_) => {}
-        },
-        None => {}
+    // XXX Will be silent on fetch / parse failure.
+    if let Some(s) = window().local_storage().get(&"best") {
+        if let Ok(best) = s.parse::<usize>() {
+            game.set_best(best);
+        }
     }
 
     game.seed_cell(get_seed());
@@ -114,7 +111,7 @@ fn main() {
             let process_event = process_event.clone();
             move |event: event::MouseDownEvent| {
                 event.prevent_default();
-                let ref mut process_event = *process_event.lock().unwrap();
+                let process_event = &mut *process_event.lock().unwrap();
                 process_event(GameEvent::MouseDown(event));
             }
         });
@@ -126,7 +123,7 @@ fn main() {
         .add_event_listener({
             let process_event = process_event.clone();
             move |event: event::MouseUpEvent| {
-                let ref mut process_event = *process_event.lock().unwrap();
+                let process_event = &mut *process_event.lock().unwrap();
                 event.prevent_default();
                 process_event(GameEvent::MouseUp(event));
             }
@@ -136,25 +133,27 @@ fn main() {
     document().add_event_listener({
         let process_event = process_event.clone();
         move |event: event::KeyDownEvent| {
-            let ref mut process_event = *process_event.lock().unwrap();
+            let process_event = &mut *process_event.lock().unwrap();
             process_event(GameEvent::KeyDown(event));
         }
     });
 
 
     // Set up and start a timer if needed.
-    if TICK_MS > 0 {
+    if TICK_MS.is_some() {
         fn run_timer(process_event: Arc<Mutex<dyn FnMut(GameEvent)>>)
         {
-            stdweb::web::set_timeout({
-                let process_event_clone = process_event.clone();
+            let process_event_clone = process_event.clone();
+            stdweb::web::set_timeout(
                 move || {
-                    let ref mut process_event_fn =
-                        *process_event_clone.lock().unwrap();
+                    let process_event_fn =
+                        &mut *process_event_clone.lock().unwrap();
                     process_event_fn(GameEvent::Tick);
                     run_timer(process_event);
-                }},
-                TICK_MS,
+                },
+                // XXX Because of the parent test, we know this
+                // unwrap will succeed. But ugh.
+                TICK_MS.unwrap(),
             );
         }
         run_timer(process_event);

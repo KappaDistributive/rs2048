@@ -29,7 +29,7 @@ impl Game {
     pub fn from_size(size: usize) -> Self {
         Game {
             board: vec![0; size * size],
-            size: size,
+            size,
             score: 0,
             best: 0,
             finished: false,
@@ -56,7 +56,7 @@ impl Game {
         }
     }
 
-    pub fn is_finished(self) -> bool {
+    pub fn is_finished(&self) -> bool {
         self.finished
     }
 
