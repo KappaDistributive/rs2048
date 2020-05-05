@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate stdweb;
 use stdweb::traits::*;
-use stdweb::web::{document, event, window};
+use stdweb::web::{document, event, window, confirm};
 
 use std::sync::{Arc, Mutex};
 
@@ -68,18 +68,22 @@ fn main() {
                 "ArrowLeft" => game.step(&Direction::Left),
                 "ArrowRight" => game.step(&Direction::Right),
                 "r" => {
-                    game.clear();
-                    // Store new best in web storage
-                    match window()
-                        .local_storage()
-                        .insert(&"best", &format!("{}", game.get_best()))
-                    {
-                        Ok(_) => {}
-                        Err(_) => {
-                            console!(log, "Failed to save high score to web storage!");
+                    if confirm("Reset game?") {
+                        game.clear();
+                        // Store new best in web storage
+                        match window()
+                            .local_storage()
+                            .insert(&"best", &format!("{}", game.get_best()))
+                        {
+                            Ok(_) => {}
+                            Err(_) => {
+                                console!(log, "Failed to save high score to web storage!");
+                            }
                         }
+                        true
+                    } else {
+                        false
                     }
-                    true
                 }
                 _ => false,
             },
