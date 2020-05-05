@@ -5,4 +5,4 @@ authors = ["Stefan Mesken <KappaDistributive@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-stdweb = "0.4.12"
+stdweb = "0.4"
