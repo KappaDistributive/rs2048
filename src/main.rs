@@ -103,8 +103,8 @@ fn main() {
     // The event processing closure needs to be mutably
     // shared between event handlers. Interior mutability
     // will work.
-    let process_event: Arc<Mutex<Box<FnMut(GameEvent)>>> =
-        Arc::new(Mutex::new(Box::new(process_event_fn)));
+    let process_event: Arc<Mutex<dyn FnMut(GameEvent)>> =
+        Arc::new(Mutex::new(process_event_fn));
 
     // Add event handler MouseDown
     document()
@@ -144,7 +144,7 @@ fn main() {
 
     // Set up and start a timer if needed.
     if TICK_MS > 0 {
-        fn run_timer(process_event: Arc<Mutex<Box<FnMut(GameEvent)>>>)
+        fn run_timer(process_event: Arc<Mutex<dyn FnMut(GameEvent)>>)
         {
             stdweb::web::set_timeout({
                 let process_event_clone = process_event.clone();
