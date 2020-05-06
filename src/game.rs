@@ -29,7 +29,7 @@ impl Game {
     pub fn from_size(size: usize) -> Self {
         Game {
             board: vec![0; size * size],
-            size: size,
+            size,
             score: 0,
             best: 0,
             finished: false,
@@ -56,7 +56,7 @@ impl Game {
         }
     }
 
-    pub fn is_finished(self) -> bool {
+    pub fn is_finished(&self) -> bool {
         self.finished
     }
 
@@ -131,73 +131,6 @@ impl Game {
             131072 => &"#1883cc",
             _ => &"#3c3a32",
         }
-    }
-
-    /// Creates a String representation of self.state as in
-    /// +-----------+-----------+-----------+-----------+
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// |   32768   |           |           |           |
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// +-----------+-----------+-----------+-----------+
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// +-----------+-----------+-----------+-----------+
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// |           |           |   2048    |           |
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// +-----------+-----------+-----------+-----------+
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// |           |    128    |           |    256    |
-    /// |           |           |           |           |
-    /// |           |           |           |           |
-    /// +-----------+-----------+-----------+-----------+
-    pub fn to_string(&self) -> String {
-        let print_width: usize = 1 + self.size * 12;
-        let print_height: usize = 1 + self.size * 6;
-        let mut temp: Vec<char> = Vec::new();
-
-        // create empty board with cell borders
-        for y in 0..print_height {
-            for x in 0..print_width {
-                match (y % 6, x % 12) {
-                    (0, 0) => temp.push('+'),
-                    (0, _) => temp.push('-'),
-                    (_, 0) => temp.push('|'),
-                    _ => temp.push(' '),
-                }
-            }
-            temp.push('\n');
-        }
-
-        // fill in cells with proper offset
-        for y in 0..self.size {
-            for x in 0..self.size {
-                if self.get_state(x, y) > 0 {
-                    // get cell value
-                    let cell_state: Vec<char> = self
-                        .get_state(x, y)
-                        .to_string()
-                        .chars()
-                        .collect::<Vec<char>>();
-                    let cell_len = cell_state.len();
-
-                    for z in 0..cell_len {
-                        // calculate offset
-                        let offset = 6 - cell_len / 2;
-                        temp[(3 + y * 6) * (print_width + 1) + x * 12 + offset + z] = cell_state[z];
-                    }
-                }
-            }
-        }
-        temp.iter().collect()
     }
 
     pub fn set_state(&mut self, x: usize, y: usize, value: usize) {
@@ -333,5 +266,74 @@ impl Game {
             Direction::Right => (1, 0),
             Direction::Left => (-1, 0),
         }
+    }
+}
+
+impl std::fmt::Display for Game {
+    /// Creates a text representation of self.state as in
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |   32768   |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |           |   2048    |           |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// |           |    128    |           |    256    |
+    /// |           |           |           |           |
+    /// |           |           |           |           |
+    /// +-----------+-----------+-----------+-----------+
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let print_width: usize = 1 + self.size * 12;
+        let print_height: usize = 1 + self.size * 6;
+        let mut temp: Vec<char> = Vec::new();
+
+        // create empty board with cell borders
+        for y in 0..print_height {
+            for x in 0..print_width {
+                match (y % 6, x % 12) {
+                    (0, 0) => temp.push('+'),
+                    (0, _) => temp.push('-'),
+                    (_, 0) => temp.push('|'),
+                    _ => temp.push(' '),
+                }
+            }
+            temp.push('\n');
+        }
+
+        // fill in cells with proper offset
+        for y in 0..self.size {
+            for x in 0..self.size {
+                if self.get_state(x, y) > 0 {
+                    // get cell value
+                    let cell_state: Vec<char> = self
+                        .get_state(x, y)
+                        .to_string()
+                        .chars()
+                        .collect::<Vec<char>>();
+                    let cell_len = cell_state.len();
+                    for (z, &st) in cell_state.iter().enumerate() {
+                        // calculate offset
+                        let offset = 6 - cell_len / 2;
+                        let dest = (3 + y * 6) * (print_width + 1) + x * 12 + offset + z;
+                        temp[dest] = st;
+                    }
+                }
+            }
+        }
+        write!(f, "{}", temp.iter().collect::<String>())
     }
 }
