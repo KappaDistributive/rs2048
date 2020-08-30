@@ -13,3 +13,6 @@ Cargo.lock
 
 /target
 **/*.rs.bk
+
+# JetBrains IDE config folder
+.idea/*
