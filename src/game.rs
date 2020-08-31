@@ -1,7 +1,7 @@
 #![allow(unused)]
 use std::collections::HashSet;
 use stdweb::traits::*;
-use stdweb::web::{document, Element, INode};
+use stdweb::web::{document, Element, INode, window};
 
 use crate::canvas::Canvas;
 use crate::scoreboard::Scoreboard;
@@ -210,6 +210,16 @@ impl Game {
         self.best = std::cmp::max(self.best, self.score);
         self.score = 0;
         self.finished = false;
+    }
+
+    /// Store best score in local storage
+    pub fn save_best(&self) {
+        match window().local_storage().insert(&"best", &format!("{}", self.get_best())) {
+            Ok(_) => {}
+            Err(_) => {
+                console!(log, "Failed to save high score to local storage!");
+            }
+        }
     }
 
     // private helper functions

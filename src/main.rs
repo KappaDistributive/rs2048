@@ -67,16 +67,7 @@ fn main() {
                 "r" => {
                     if confirm("Reset game?") {
                         game.clear();
-                        // Store new best in web storage
-                        match window()
-                            .local_storage()
-                            .insert(&"best", &format!("{}", game.get_best()))
-                        {
-                            Ok(_) => {}
-                            Err(_) => {
-                                console!(log, "Failed to save high score to web storage!");
-                            }
-                        }
+                        game.save_best();
                         true
                     } else {
                         false
@@ -90,6 +81,11 @@ fn main() {
                 // interval timer.
 
                 // canvas.clear_all();
+                false
+            }
+            GameEvent::Exit => {
+                game.clear();
+                game.save_best();
                 false
             }
         };
@@ -138,6 +134,15 @@ fn main() {
         move |event: event::KeyDownEvent| {
             let process_event = &mut *process_event.lock().unwrap();
             process_event(GameEvent::KeyDown(event));
+        }
+    });
+
+    // Add event handler BeforeUnload
+    window().add_event_listener({
+        let process_event = process_event.clone();
+        move |_event: event::BeforeUnloadEvent| {
+            let process_event = &mut *process_event.lock().unwrap();
+            process_event(GameEvent::Exit);
         }
     });
 
